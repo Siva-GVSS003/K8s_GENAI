@@ -1,25 +1,57 @@
-name: AI Kubernetes Auto-Fix
+name: K8s Cluster AI Troubleshooting
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:    # Allows manual triggering
+  schedule:            # Optional: run every day at midnight
+    - cron: "0 0 * * *"
 
 jobs:
-  troubleshoot:
+  k8sgpt-ai-analyze:
     runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}   # Your OpenAI API key
+
     steps:
-      - name: Checkout
+      # Step 1: Checkout repository
+      - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      # Step 2: Install dependencies (Python + K8sGPT)
+      - name: Install Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      - name: Install K8sGPT dependencies
-        run: pip install openai pyyaml
+      - name: Install K8sGPT
+        run: |
+          curl -LO https://github.com/k8sgpt-ai/k8sgpt/releases/latest/download/k8sgpt_Linux_x86_64.tar.gz
+          tar -xvf k8sgpt_Linux_x86_64.tar.gz
+          sudo mv k8sgpt /usr/local/bin/
+          k8sgpt version
 
-      - name: Set OpenAI Key
-        run: echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
+      # Step 3: Configure K8sGPT to use OpenAI
+      - name: Authenticate K8sGPT with OpenAI
+        run: |
+          k8sgpt auth add openai
 
-      - name: Run AI Troubleshoot
-        run: k8sgpt analyze --explain
+      - name: List K8sGPT auths
+        run: k8sgpt auth list
+
+      # Step 4: Run AI-assisted analysis
+      - name: Run K8sGPT AI analysis
+        run: |
+          echo "Analyzing Deployments..."
+          k8sgpt analyze --filter Deployment --explain
+          echo "Analyzing Pods..."
+          k8sgpt analyze --filter Pod --explain
+          echo "Analyzing Services..."
+          k8sgpt analyze --filter Service --explain
+          echo "Analyzing Security..."
+          k8sgpt analyze --filter Security --explain
+          echo "Analyzing Network Policies..."
+          k8sgpt analyze --filter NetworkPolicy --explain
+
+      # Step 5: Optional: Output summary to logs
+      - name: Summary
+        run: |
+          echo "K8sGPT AI analysis completed. Check above logs for issues and AI suggestions."
