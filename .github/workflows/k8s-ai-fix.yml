@@ -10,21 +10,29 @@ jobs:
   k8sgpt-ai-analyze:
     runs-on: ubuntu-latest
     env:
-      # K8sGPT will read this key directly, no interactive prompt needed
+      # K8sGPT reads the OpenAI key from this environment variable
       K8SGPT_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # K8sGPT and kubectl will use this kubeconfig to connect to your cluster
+      KUBECONFIG: ${{ github.workspace }}/kubeconfig
 
     steps:
-      # Step 1: Checkout the repo
+      # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Install Python (required by some K8sGPT dependencies)
+      # Step 2: Setup kubeconfig from GitHub Secret
+      - name: Setup kubeconfig
+        run: |
+          echo "${{ secrets.KUBECONFIG_DATA }}" > $GITHUB_WORKSPACE/kubeconfig
+          chmod 600 $GITHUB_WORKSPACE/kubeconfig
+
+      # Step 3: Install Python (required by some K8sGPT dependencies)
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      # Step 3: Install K8sGPT
+      # Step 4: Install K8sGPT
       - name: Install K8sGPT
         run: |
           curl -LO https://github.com/k8sgpt-ai/k8sgpt/releases/latest/download/k8sgpt_Linux_x86_64.tar.gz
@@ -32,7 +40,7 @@ jobs:
           sudo mv k8sgpt /usr/local/bin/
           k8sgpt version
 
-      # Step 4: Run AI-assisted analysis on core resources
+      # Step 5: Run AI-assisted analysis on core resources
       - name: Run K8sGPT AI analysis
         run: |
           echo "=== Analyzing Deployments ==="
@@ -46,6 +54,6 @@ jobs:
           echo "=== Analyzing Network Policies ==="
           k8sgpt analyze --filter NetworkPolicy --explain
 
-      # Step 5: Optional: Output summary message
+      # Step 6: Optional: Output summary
       - name: Summary
-        run: echo "K8sGPT AI analysis completed. Check above logs for issues and AI suggestions."
+        run: echo "K8sGPT AI ana
