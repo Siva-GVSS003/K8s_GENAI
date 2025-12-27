@@ -1,0 +1,25 @@
+name: AI Kubernetes Auto-Fix
+
+on:
+  workflow_dispatch:
+
+jobs:
+  troubleshoot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install K8sGPT dependencies
+        run: pip install openai pyyaml
+
+      - name: Set OpenAI Key
+        run: echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
+
+      - name: Run AI Troubleshoot
+        run: k8sgpt analyze --explain
